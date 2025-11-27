@@ -1,51 +1,25 @@
-// src/App.jsx – BRUTUS-X-AI WELTHERRSCHAFT 2026 – FINAL
-import { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { getFirestore, getDoc, doc, collection, getDocs } from "firebase/firestore";
-import { db } from "./utils/firebase";
+// src/App.jsx – BRUTUS-X-AI WELTHERRSCHAFT 2026 – DEMO VERSION
+import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
-import CookieBanner from "./components/CookieBanner";
-
-const functions = getFunctions();
-const auth = getAuth();
-const firestore = getFirestore();
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showSupport, setShowSupport] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [niches, setNiches] = useState(["viral", "funny"]);
-  const [newNiche, setNewNiche] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [viralScore, setViralScore] = useState(null);
-  const [abTesting, setAbTesting] = useState(false);
 
-  useEffect(() => {
-    onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u);
-        const snap = await getDoc(doc(db, "users", u.uid));
-        const data = snap.data() || {};
-        setProfile({
-          name: u.displayName || "Brutus-X-AI User",
-          photo: u.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`,
-          videosCreated: data.videosCreated || 0,
-          totalViews: data.totalViews || 0,
-          isPro: data.isPro || false,
-          niches: data.niches || ["viral", "funny"],
-          totalEarnings: data.totalEarnings || 0,
-          isMonetized: data.isMonetized || false
-        });
-        setNiches(data.niches || ["viral", "funny"]);
-      }
-    });
-  }, []);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (email && password) {
+      setIsLoggedIn(true);
+      toast.success("Willkommen zurück, Welteroberer! 🚀");
+    } else {
+      toast.error("Email & Passwort erforderlich!");
+    }
+  };
 
   const saveNiches = async () => {
     if (newNiche.trim()) {
