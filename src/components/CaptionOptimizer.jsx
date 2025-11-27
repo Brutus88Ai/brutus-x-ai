@@ -1,14 +1,16 @@
 // src/components/CaptionOptimizer.jsx - AI Caption Optimizer für Brutus-X-AI
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../utils/firebase';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 export function CaptionOptimizer() {
   const [caption, setCaption] = useState('');
   const [optimizing, setOptimizing] = useState(false);
   const [result, setResult] = useState(null);
+  const [originalCaption, setOriginalCaption] = useState('');
+  const formRef = useRef(null);
   const resultRef = useRef(null);
 
   const handleOptimize = async (e) => {
@@ -20,11 +22,12 @@ export function CaptionOptimizer() {
     }
 
     setOptimizing(true);
-    toast.loading('AI optimiert deine Caption...');
+    setOriginalCaption(caption);
+    const loadingToast = toast.loading('AI optimiert deine Caption...');
 
     try {
-      const optimizeCaption = httpsCallable(functions, 'optimizeCaption');
-      const response = await optimizeCaption({ caption: caption.trim() });
+      const optimizeCaptionFn = httpsCallable(functions, 'optimizeCaption');
+      const response = await optimizeCaptionFn({ caption: caption.trim() });
       
       setResult({
         original: caption,
@@ -32,23 +35,29 @@ export function CaptionOptimizer() {
         improvements: response.data.improvements
       });
 
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       toast.success('Caption optimiert! 🚀');
+      
+      formRef.current?.reset();
+      setCaption('');
       
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 100);
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       toast.error('Fehler bei Optimierung: ' + error.message);
+      console.error('Caption optimization error:', error);
     } finally {
       setOptimizing(false);
     }
   };
 
   const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('In Zwischenablage kopiert! ✓');
+    if (navigator.clipboard && text) {
+      navigator.clipboard.writeText(text);
+      toast.success('In Zwischenablage kopiert! ✓');
+    }
   };
 
   return (
