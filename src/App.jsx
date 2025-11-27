@@ -103,12 +103,6 @@ function isValidUrl(string) {
   }
 }
 
-/**
- * Delay function for async operations
- */
-// eslint-disable-next-line no-unused-vars
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 // =============================================================================
 // API INTEGRATION FUNCTIONS
 // =============================================================================
