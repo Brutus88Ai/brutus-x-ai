@@ -104,3 +104,70 @@ export const runABTest = onCall(async (request) => {
     variantB
   };
 });
+
+// Caption Optimizer mit AI
+export const optimizeCaption = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Bitte einloggen!");
+  }
+
+  const { caption } = request.data;
+  
+  if (!caption || caption.length < 10) {
+    throw new HttpsError("invalid-argument", "Caption muss mindestens 10 Zeichen haben!");
+  }
+
+  // AI-basierte Optimierung (später mit echtem AI-Service)
+  const optimized = optimizeCaptionLogic(caption);
+  
+  return {
+    optimizedCaption: optimized.text,
+    improvements: optimized.improvements
+  };
+});
+
+// Caption-Optimierungs-Logik
+function optimizeCaptionLogic(caption) {
+  let optimized = caption.trim();
+  const improvements = [];
+  
+  // 1. Emoji hinzufügen wenn keine vorhanden
+  if (!/[\u{1F600}-\u{1F64F}]/u.test(optimized)) {
+    optimized = "🔥 " + optimized;
+    improvements.push("Emoji für mehr Aufmerksamkeit hinzugefügt");
+  }
+  
+  // 2. Hashtags optimieren
+  const hashtagCount = (optimized.match(/#/g) || []).length;
+  if (hashtagCount < 3) {
+    optimized += " #viral #fyp #trending";
+    improvements.push("Relevante Hashtags für bessere Reichweite ergänzt");
+  } else if (hashtagCount > 10) {
+    improvements.push("Hinweis: Zu viele Hashtags können spammy wirken");
+  }
+  
+  // 3. Call-to-Action hinzufügen
+  const hasCallToAction = /follow|like|comment|share|subscribe|check out|link in bio/i.test(optimized);
+  if (!hasCallToAction) {
+    optimized += " 👉 Follow for more!";
+    improvements.push("Call-to-Action hinzugefügt für mehr Engagement");
+  }
+  
+  // 4. Länge optimieren
+  if (optimized.length > 300) {
+    improvements.push("Caption ist etwas lang - kürzer ist oft besser für Shorts");
+  }
+  
+  // 5. Erste Wörter optimieren (Hook)
+  const firstWords = optimized.split(' ').slice(0, 3).join(' ').toLowerCase();
+  const goodHooks = ['watch', 'wait', 'stop', 'pov:', 'this is', 'omg', 'you won\'t'];
+  const hasGoodHook = goodHooks.some(hook => firstWords.includes(hook));
+  if (!hasGoodHook) {
+    improvements.push("Tipp: Starke Hooks wie 'Wait for it...' oder 'POV:' ziehen mehr Aufmerksamkeit");
+  }
+  
+  return {
+    text: optimized,
+    improvements
+  };
+}
