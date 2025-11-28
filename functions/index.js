@@ -186,25 +186,6 @@ export const uploadToAllSix = onCall(async (request) => {
   };
 });
 
-// A/B-Testing
-export const runABTest = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Bitte einloggen!");
-  }
-
-  const { basePrompt } = request.data;
-  
-  // Zwei Varianten generieren
-  const variantA = `${basePrompt} - Kurz & knackig`;
-  const variantB = `${basePrompt} - Mit Story-Aufbau`;
-  
-  return {
-    winner: Math.random() > 0.5 ? "A" : "B",
-    variantA,
-    variantB
-  };
-});
-
 // Caption Optimizer mit AI
 export const optimizeCaption = onCall(async (request) => {
   if (!request.auth) {

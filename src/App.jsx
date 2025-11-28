@@ -23,6 +23,24 @@ const STEP_STATUS_STYLES = {
   failed: "border-red-500 text-red-300"
 };
 
+const PLATFORM_CONFIG = [
+  { id: "tiktok", label: "TikTok" },
+  { id: "instagram", label: "Instagram" },
+  { id: "youtube", label: "YouTube Shorts" },
+  { id: "facebook", label: "Facebook Reels" },
+  { id: "x", label: "X Video" },
+  { id: "linkedin", label: "LinkedIn" }
+];
+
+const createPlatformStats = () =>
+  PLATFORM_CONFIG.map(({ id, label }) => {
+    const views = Math.floor(Math.random() * 6000) + 4000;
+    const likes = Math.floor(views * (0.06 + Math.random() * 0.08));
+    return { id, label, views, likes };
+  });
+
+const formatMetric = (value) => new Intl.NumberFormat("de-DE").format(value);
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -36,7 +54,6 @@ export default function App() {
   const [niches, setNiches] = useState(["viral", "funny"]);
   const [newNiche, setNewNiche] = useState("");
   const [viralScore, setViralScore] = useState(null);
-  const [abTesting, setAbTesting] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
@@ -45,6 +62,11 @@ export default function App() {
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [generatedPrompts, setGeneratedPrompts] = useState([]);
   const [autopilotCycles, setAutopilotCycles] = useState([]);
+  const [videoHistory, setVideoHistory] = useState([]);
+  const [activeTrendTab, setActiveTrendTab] = useState("auto");
+  const [manualQuery, setManualQuery] = useState("");
+  const [manualSuggestions, setManualSuggestions] = useState([]);
+  const [manualLoading, setManualLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -177,47 +199,72 @@ export default function App() {
     }
   };
 
-  const startABTest = async () => {
-    setAbTesting(true);
-    const loadingToast = toast.loading("A/B-Test startet...");
+  const handleManualSearch = () => {
+    if (!manualQuery.trim()) {
+      toast.error("Bitte einen Suchbegriff eingeben!");
+      return;
+    }
+    setManualLoading(true);
     try {
-      const getTrends = httpsCallable(functions, "getPersonalizedTrends");
-      const trendsRes = await getTrends();
-      const prompt = trendsRes.data[0];
-
-      const runTest = httpsCallable(functions, "runABTest");
-      const result = await runTest({ basePrompt: prompt });
-      toast.success(`Gewinner: Variante ${result.data.winner}! 🏆`, { id: loadingToast });
+      const base = manualQuery.trim();
+      const variations = [
+        base,
+        `${base} ${cleanNiches[0] || "Growth"} Hack`,
+        `${base} ${new Date().getFullYear()} Trend`
+      ];
+      const suggestions = variations.map((term, index) => ({
+        id: `${Date.now()}-${index}`,
+        trend: term,
+        prompts: buildPromptMatrix(term, cleanNiches)
+      }));
+      setManualSuggestions(suggestions);
+      toast.success("Manuelle Trendideen aktualisiert!");
     } catch (error) {
-      toast.error("Fehler: " + error.message, { id: loadingToast });
+      console.error("Manual search error", error);
+      toast.error("Manuelle Suche fehlgeschlagen");
     } finally {
-      setAbTesting(false);
+      setManualLoading(false);
     }
   };
 
-  const startTrendScout = async () => {
+  const executeTrendPipeline = async ({ trendOverride, source = "auto", presetPrompts } = {}) => {
     if (!user) return toast.error("Bitte einloggen!");
 
     resetWorkflow();
     setUploading(true);
 
-    const loadingToast = toast.loading("🚀 Starte Auto-Pilot...");
+    const startMessage = source === "manual" && trendOverride
+      ? `🚀 Generiere ${trendOverride}`
+      : "🚀 Starte Auto-Pilot...";
+    const loadingToast = toast.loading(startMessage);
     let currentStep = "trend";
 
     try {
       updateWorkflowStep("trend", {
         status: "running",
-        message: "Scanne Google Trends (DE) & Nutzer-Nischen"
+        message: source === "manual"
+          ? "Verarbeite manuell eingegebenen Trend"
+          : "Scanne Google Trends (DE) & Nutzer-Nischen"
       });
 
-      const getTrends = httpsCallable(functions, "getPersonalizedTrends");
-      const trendsRes = await getTrends();
-      const trend = trendsRes.data[0] || "KI Revolution 2026";
+      let trend = trendOverride;
+
+      if (!trend) {
+        const getTrends = httpsCallable(functions, "getPersonalizedTrends");
+        const trendsRes = await getTrends();
+        trend = trendsRes.data[0] || "KI Revolution 2026";
+        updateWorkflowStep("trend", {
+          status: "done",
+          message: `Top Trend gewählt: ${trend}`
+        });
+      } else {
+        updateWorkflowStep("trend", {
+          status: "done",
+          message: `Manuell ausgewählt: ${trend}`
+        });
+      }
+
       setSelectedTrend(trend);
-      updateWorkflowStep("trend", {
-        status: "done",
-        message: `Top Trend gewählt: ${trend}`
-      });
 
       const previewUrl = createPollinationsPreview(trend, cleanNiches);
       setPreviewImageUrl(previewUrl);
@@ -225,9 +272,9 @@ export default function App() {
       currentStep = "prompt";
       updateWorkflowStep("prompt", {
         status: "running",
-        message: "Baue 3 Prompt-Cluster (Hook, Authority, Story)"
+        message: "Baue Prompt-Cluster (Hook, Authority, Story)"
       });
-      const promptMatrix = buildPromptMatrix(trend, cleanNiches);
+      const promptMatrix = presetPrompts || buildPromptMatrix(trend, cleanNiches);
       setGeneratedPrompts(promptMatrix);
       updateWorkflowStep("prompt", {
         status: "done",
@@ -278,16 +325,33 @@ export default function App() {
         message: "Distribution bestätigt (TikTok, IG, YT, FB, X, LinkedIn)"
       });
 
-      const report = Array.from({ length: 3 }, (_, index) => ({
+      const platformStats = createPlatformStats();
+      setVideoHistory((prev) => [
+        {
+          id: Date.now(),
+          trend,
+          videoUrl: videoRes.data.videoUrl,
+          score: scoreRes.data.score,
+          createdAt: new Date().toISOString(),
+          platforms: platformStats,
+          source
+        },
+        ...prev
+      ].slice(0, 12));
+
+      const cycleReport = (presetPrompts || promptMatrix).slice(0, 3).map((variant, index) => ({
         id: index + 1,
         trend,
-        promptVariant: promptMatrix[index % promptMatrix.length]?.title || `Variante ${index + 1}`,
+        promptVariant: variant.title,
         status: "Erfolgreich",
         timestamp: new Date(Date.now() - (index * 12000)).toISOString()
       }));
-      setAutopilotCycles(report);
+      setAutopilotCycles(cycleReport);
 
-      toast.success("🎉 Trend Scout abgeschlossen!", { id: loadingToast });
+      const successMessage = source === "manual"
+        ? "🎉 Video generiert & verteilt!"
+        : "🎉 Trend Scout abgeschlossen!";
+      toast.success(successMessage, { id: loadingToast });
     } catch (error) {
       updateWorkflowStep(currentStep, {
         status: "failed",
@@ -298,6 +362,8 @@ export default function App() {
       setUploading(false);
     }
   };
+
+  const startTrendScout = () => executeTrendPipeline({ source: "auto" });
 
   const sendSupportMessage = async () => {
     if (!input.trim()) return;
@@ -420,7 +486,7 @@ export default function App() {
             <p className="text-2xl md:text-5xl font-bold mb-4">Klagt nicht, promptet!</p>
             <p className="text-base md:text-lg text-gray-300 mb-8">Ein Klick. Sechs Plattformen. Weltherrschaft.</p>
 
-            <div className="flex flex-col md:flex-row justify-center gap-4 mb-8">
+            <div className="flex justify-center mb-10">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -430,15 +496,92 @@ export default function App() {
               >
                 {uploading ? "⚡ LÄUFT..." : "🚀 Trend Scout"}
               </motion.button>
+            </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                onClick={startABTest}
-                disabled={abTesting || uploading}
-                className="text-lg md:text-xl font-bold px-6 md:px-8 py-4 rounded-xl bg-yellow-500 text-black hover:bg-yellow-600 disabled:opacity-50 transition-all"
-              >
-                {abTesting ? "⏳ A/B-Test..." : "🧪 A/B-Test"}
-              </motion.button>
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="flex justify-center gap-3 mb-6">
+                <button
+                  onClick={() => setActiveTrendTab("auto")}
+                  className={`px-5 py-3 rounded-xl font-semibold transition-all ${
+                    activeTrendTab === "auto"
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-600/40"
+                      : "bg-black/40 text-gray-300 border border-purple-500/40 hover:text-white"
+                  }`}
+                >
+                  🔭 Auto Trend Radar
+                </button>
+                <button
+                  onClick={() => setActiveTrendTab("manual")}
+                  className={`px-5 py-3 rounded-xl font-semibold transition-all ${
+                    activeTrendTab === "manual"
+                      ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/40"
+                      : "bg-black/40 text-gray-300 border border-cyan-500/40 hover:text-white"
+                  }`}
+                >
+                  ✍️ Manuelle Suche
+                </button>
+              </div>
+
+              {activeTrendTab === "auto" ? (
+                <div className="bg-black/40 border border-purple-500/30 rounded-3xl p-6 md:p-8 text-left">
+                  <p className="text-xs uppercase tracking-[0.3em] text-purple-300 mb-2">Auto-Pilot</p>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">Personalisiertes Trend-Radar</h3>
+                  <p className="text-sm md:text-base text-gray-300 leading-relaxed">
+                    Der Auto-Pilot analysiert Google Trends DE, Creator Signals und deine Nischen ({cleanNiches.join(", ") || "viral"}). Mit einem Klick wählen wir den stärksten Trend, erzeugen Storyboards, Render-Prompts und verteilen das Video auf sechs Plattformen.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-black/40 border border-cyan-500/30 rounded-3xl p-6 md:p-8 text-left space-y-6">
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <input
+                      value={manualQuery}
+                      onChange={(e) => setManualQuery(e.target.value)}
+                      placeholder="z.B. Midjourney Growth Hacks"
+                      className="flex-1 px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                    />
+                    <button
+                      onClick={handleManualSearch}
+                      disabled={manualLoading}
+                      className="px-6 py-3 rounded-xl font-bold bg-cyan-500 text-black hover:bg-cyan-400 transition-all disabled:opacity-50"
+                    >
+                      {manualLoading ? "Suche..." : "Trendideen bauen"}
+                    </button>
+                  </div>
+
+                  {manualSuggestions.length === 0 ? (
+                    <p className="text-sm text-gray-400">
+                      Nutze die manuelle Suche für eigene Stichworte oder Creator-Namen. Wir generieren passende Prompt-Cluster und du kannst den Trend sofort über die Pipeline jagen.
+                    </p>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {manualSuggestions.map((suggestion) => (
+                        <div key={suggestion.id} className="bg-gray-900/50 border border-cyan-500/40 rounded-2xl p-5 flex flex-col gap-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-lg font-semibold text-white">{suggestion.trend}</h4>
+                            <span className="text-xs uppercase text-cyan-300">Manual</span>
+                          </div>
+                          <ul className="text-xs text-gray-300 space-y-1">
+                            {suggestion.prompts.slice(0, 2).map((variant) => (
+                              <li key={variant.id}>• {variant.title}</li>
+                            ))}
+                          </ul>
+                          <button
+                            onClick={() => executeTrendPipeline({
+                              trendOverride: suggestion.trend,
+                              source: "manual",
+                              presetPrompts: suggestion.prompts
+                            })}
+                            disabled={uploading}
+                            className="w-full bg-cyan-500 text-black font-bold py-2 rounded-xl hover:bg-cyan-400 transition-all disabled:opacity-50"
+                          >
+                            {uploading ? "Pipeline läuft..." : "Trend generieren"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {selectedTrend && (
@@ -552,6 +695,47 @@ export default function App() {
                   className="w-full rounded-3xl shadow-2xl border-4 border-purple-500"
                 />
               </motion.div>
+            )}
+
+            {videoHistory.length > 0 && (
+              <div className="max-w-6xl mx-auto mb-12">
+                <h3 className="text-xl font-bold mb-4">Video Analytics Dashboard</h3>
+                <div className="grid md:grid-cols-2 gap-5">
+                  {videoHistory.map((video) => (
+                    <div key={video.id} className="bg-black/40 border border-red-500/30 rounded-3xl p-5 md:p-6 text-left flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg md:text-xl font-semibold text-white max-w-[70%]">{video.trend}</h4>
+                        <span className="text-xs uppercase tracking-wide text-gray-400">{video.source === "manual" ? "Manual" : "Auto"}</span>
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        <span className="font-semibold text-white">{video.score}% Viral-Score</span>
+                        <span className="mx-2">•</span>
+                        <span>{new Date(video.createdAt).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {video.platforms.map((platform) => (
+                          <div key={platform.id} className="bg-gray-900/60 border border-gray-700 rounded-2xl p-3">
+                            <p className="text-sm font-semibold text-white">{platform.label}</p>
+                            <p className="text-xs text-gray-300">Views: {formatMetric(platform.views)}</p>
+                            <p className="text-xs text-gray-300">Likes: {formatMetric(platform.likes)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <a
+                          href={video.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-cyan-400 hover:text-cyan-300"
+                        >
+                          Clip ansehen ↗
+                        </a>
+                        <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

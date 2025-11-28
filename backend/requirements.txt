@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+psycopg2-binary
+pytrends
+httpx
+tenacity
+alembic
+python-dotenv
+pydantic
+undetected-chromedriver
+selenium
+playwright
+requests
