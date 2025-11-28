@@ -7,7 +7,7 @@ import { getAnalytics } from "firebase/analytics";
 
 // Env-Vars aus Vercel (sicher – nicht im Code)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAUsGQ4x5-9AkO4yVKCmEidSWlV14aZigw",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyATsVHwFTOb3y-X97UO0rapAbOZfMHbbW0",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "brutusai-43b25.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "brutusai-43b25",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "brutusai-43b25.firebasestorage.app",
