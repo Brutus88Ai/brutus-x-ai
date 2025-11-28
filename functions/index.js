@@ -13,8 +13,16 @@ export const getPersonalizedTrends = onCall(async (request) => {
   }
 
   const uid = request.auth.uid;
-  const userDoc = await db.collection("users").doc(uid).get();
-  const niches = userDoc.data()?.niches || ["viral", "funny"];
+  let niches = ["viral", "funny"];
+  
+  try {
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (userDoc.exists) {
+      niches = userDoc.data()?.niches || niches;
+    }
+  } catch (e) {
+    console.log("User doc nicht gefunden, verwende Defaults");
+  }
 
   // Simulierte Trends (später mit echten APIs ersetzen)
   const trends = [
@@ -72,11 +80,29 @@ export const uploadToAllSix = onCall(async (request) => {
   // Simulierter Upload zu 6 Plattformen
   const platforms = ["TikTok", "Instagram", "YouTube Shorts", "Facebook", "X", "LinkedIn"];
   
-  // User-Stats aktualisieren
-  await db.collection("users").doc(uid).update({
-    videosCreated: (await db.collection("users").doc(uid).get()).data()?.videosCreated + 1 || 1,
-    lastUpload: new Date().toISOString()
-  });
+  // User-Stats aktualisieren (mit Fehlerbehandlung)
+  try {
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await userRef.get();
+    
+    if (userDoc.exists) {
+      await userRef.update({
+        videosCreated: (userDoc.data()?.videosCreated || 0) + 1,
+        lastUpload: new Date().toISOString()
+      });
+    } else {
+      // User-Dokument erstellen wenn nicht vorhanden
+      await userRef.set({
+        videosCreated: 1,
+        totalViews: 0,
+        isPro: false,
+        niches: ["viral", "funny"],
+        lastUpload: new Date().toISOString()
+      });
+    }
+  } catch (e) {
+    console.log("Stats-Update fehlgeschlagen:", e.message);
+  }
   
   return { 
     success: true, 
