@@ -22,50 +22,60 @@ async function generateViralPromptAI(trend, niche) {
 }
 
 async function handleSupportAI(message) {
-  const lowerMsg = message.toLowerCase();
+  const lowerMsg = message.toLowerCase().trim();
 
   const knowledgeBase = [
     {
-      match: /(pro|abo|premium|mitgliedschaft|preis|kosten|abo buchen)/,
+      match: /(ablauf|danach|weitergeht|was passiert nach|programm danach|nach dem kauf|nach dem upgrade)/,
+      answer:
+        "Nach dem Upgrade startet dein PRO-Auto-Pilot sofort: \n1️⃣ Profile & Nischen werden synchronisiert. \n2️⃣ Der Trend Scout plant drei Zyklen (Trend → Prompt-Matrix → Grok Render → Distribution). \n3️⃣ Du kannst im Timeline-Tab Slots setzen, pausieren oder manuell triggern. \n4️⃣ Jeder fertige Render landet automatisch im Upload-Log inkl. Webhook-Report. 🚀"
+    },
+    {
+      match: /(pro|abo|premium|mitgliedschaft|preis|kosten|abo buchen|upgrade)/,
       answer:
         "So buchst du BRUTUS-X-AI PRO: \n1️⃣ Öffne das Profil-Menü oben rechts. \n2️⃣ Wähle 'Upgrade auf PRO'. \n3️⃣ Entscheide dich für Woche (4,99€), Monat (19,99€) oder Jahr (99,99€). \n4️⃣ Schließe den Kauf via Google Play Billing ab – dein Account wird sofort freigeschaltet. 👑"
     },
     {
-      match: /(wie.*(buche|aktivieren)|google play|rechnung|kauf|abo kündigen|kündigen)/,
+      match: /(wie.*(buche|aktivier)|google play|rechnung|kauf|abo kündigen|kündigen|zahlung|kostenstelle)/,
       answer:
-        "Alle Zahlungen laufen DSGVO-konform über Google Play Billing. Nach dem Upgrade findest du die Rechnung in deinem Google-Account. Kündigen geht jederzeit über die Google Play Abos-Seite – wir speichern keine Zahlungsdaten clientseitig. 💳"
+        "Alle Zahlungen laufen DSGVO-konform über Google Play Billing. Die Belege findest du in deinem Google-Account unter 'Zahlungsverlauf'. Kündigen geht jederzeit über die Google-Play-Aboverwaltung; der Zugriff bleibt bis zum Laufzeitende aktiv. Wir speichern keine Zahlungsdaten clientseitig. 💳"
     },
     {
-      match: /(timeline|plan|zeitplan|wann|auto pilot|autopilot|workflow)/,
+      match: /(timeline|plan|zeitplan|wann|auto pilot|autopilot|workflow|scheduler)/,
       answer:
-        "Der Auto-Pilot besteht aus 3 Zyklen: \n• Zyklus 1 – Trendscouting & Skript (≈30s). \n• Zyklus 2 – Grok Imagine Render (GPU, 45-60s). \n• Zyklus 3 – Upload & Make.com Distribution. \nDu kannst im Dashboard jederzeit Pausen oder Slots im Timeline-Planer setzen.🗓️"
+        "Der Auto-Pilot arbeitet in 3 Zyklen: \n• Zyklus 1 – Trend Scout & Skript (≈30s). \n• Zyklus 2 – Grok Imagine Render (45-60s). \n• Zyklus 3 – Upload & Make.com Distribution. \nIm 'Timeline'-Tab kannst du Slots blocken, Tageslimits definieren oder einzelne Plattformen deaktivieren.🗓️"
     },
     {
-      match: /(hilfe|support|kontakt|problem|fehlermeldung)/,
+      match: /(hilfe|support|kontakt|problem|fehlermeldung|bug|ticket)/,
       answer:
-        "Kein Stress – schick mir einfach das, was du siehst (inkl. Uhrzeit und Schritt). Unser KI-Support erstellt automatisch ein Ticket und synct es mit dem Dev-Team. Wir melden uns innerhalb von 1h. 🚑"
+        "Kein Stress – schildere mir kurz das Problem inkl. Aktion & Uhrzeit. Ich erstelle automatisch ein Support-Ticket, synchronisiere es mit Firestore und unser Dev-Team meldet sich i.d.R. innerhalb von 60 Minuten. 📟"
     },
     {
-      match: /(upload|plattform|facebook|instagram|tiktok|linkedin|youtube|\bx\b|veröffentlichen|posten)/,
+      match: /(upload|plattform|facebook|instagram|tiktok|linkedin|youtube|\bx\b|veröffentlichen|posten|distribution)/,
       answer:
-        "Uploads laufen serverseitig über Make.com. Wir posten gleichzeitig auf TikTok, Instagram Reels, YouTube Shorts, Facebook Reels, X Video und LinkedIn. Stelle sicher, dass deine OAuth Tokens in den Einstellungen aktiv sind – der Status wird in 'Uploads' angezeigt. 🚀"
+        "Uploads laufen serverseitig über unseren Make.com-Connector. Wir posten gleichzeitig auf TikTok, Instagram Reels, YouTube Shorts, Facebook Reels, X Video und LinkedIn. Prüfe unter 'Uploads', ob deine OAuth Tokens aktiv sind – dort siehst du auch Log-Ausgaben und Webhook-Status. 🚀"
     },
     {
-      match: /(video|render|grok|runway|qualität|dauer|wartezeit)/,
+      match: /(video|render|grok|runway|qualität|dauer|wartezeit|gpu|generierung)/,
       answer:
-        "Jeder Render-Job nutzt Runway Gen4 Turbo im 9:16 Format (720x1280) – perfekt für Shorts. Die GPU-Renderphase dauert durchschnittlich 48 Sekunden. Du siehst live den Fortschritt im Workflow-Log. Falls ein Render länger als 3 Minuten braucht, wird automatisch ein Retry gestartet. 🎬"
+        "Jeder Render-Job nutzt Runway Gen4 Turbo im 9:16 Format (720x1280). Die GPU-Phase dauert durchschnittlich 48 Sekunden. Das Workflow-Log zeigt dir den Echtzeitstatus. Wenn ein Render länger als 3 Minuten benötigt, starten wir automatisch einen Retry und markieren den Job in Firestore. 🎬"
     },
     {
-      match: /(viral|score|reichweite|hashtag|caption|optimierer|skript)/,
+      match: /(viral|score|reichweite|hashtag|caption|optimierer|skript|hook|retention)/,
       answer:
-        "Dein Viral-Score besteht aus Hook-Qualität, Retention-Loop und CTA-Strength. Falls du ihn pushen willst: \n• Nutze den Caption Optimizer (CTA + 3 Hashtags). \n• Aktiviere A/B-Tests im Planer. \n• Lege deine Brand-Voice unter 'Profil → KI-Einstellungen' fest. 🔥"
+        "Dein Viral-Score setzt sich aus Hook-Impact, Retention-Loop und CTA-Strength zusammen. Boost-Tipps: \n• Nutze die Prompt-Matrix (Hook/Authority/Story). \n• Lass die Caption vom Optimizer veredeln (CTA + Hashtags). \n• Setze im Profil deine Brand-Voice, damit Grok jedes Video tonal trifft. 🔥"
+    },
+    {
+      match: /(profil|nische|avatar|brand voice|einstellungen)/,
+      answer:
+        "Im Profil-Bereich kannst du Nischen verwalten, Avatare hochladen und deine Brand-Voice definieren. Diese Infos füttern den Trend Scout und die Prompt-Matrix, damit Grok passgenaue Skripte baut. Änderungen greifen sofort im nächsten Auto-Pilot-Zyklus. 🧠"
     }
   ];
 
   const hit = knowledgeBase.find((entry) => entry.match.test(lowerMsg));
   if (hit) return hit.answer;
 
-  return "Danke für deine Nachricht! Ich helfe dir gerne weiter. Lass mich wissen, ob es um PRO, Timeline oder einen Render-Job geht. 🚀";
+  return "Danke für deine Nachricht! Beschreibe mir kurz Thema oder Schritt (z.B. PRO, Timeline, Upload, Render), dann gebe ich dir eine konkrete Anleitung. 🚀";
 }
 
 // Personalisierte Trends basierend auf Nutzer-Nischen

@@ -195,7 +195,7 @@ export default function App() {
     }
   };
 
-  const startWeltherrschaft = async () => {
+  const startTrendScout = async () => {
     if (!user) return toast.error("Bitte einloggen!");
 
     resetWorkflow();
@@ -287,7 +287,7 @@ export default function App() {
       }));
       setAutopilotCycles(report);
 
-      toast.success("🎉 WELTHERRSCHAFT AKTIVIERT!", { id: loadingToast });
+      toast.success("🎉 Trend Scout abgeschlossen!", { id: loadingToast });
     } catch (error) {
       updateWorkflowStep(currentStep, {
         status: "failed",
@@ -424,11 +424,11 @@ export default function App() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={startWeltherrschaft}
+                onClick={startTrendScout}
                 disabled={uploading}
                 className="text-3xl md:text-5xl font-black px-10 md:px-16 py-6 md:py-10 rounded-full bg-gradient-to-r from-green-500 via-blue-600 to-red-600 shadow-2xl hover:shadow-purple-600/50 disabled:opacity-50 transition-all"
               >
-                {uploading ? "⚡ LÄUFT..." : "🚀 WELTHERRSCHAFT"}
+                {uploading ? "⚡ LÄUFT..." : "🚀 Trend Scout"}
               </motion.button>
 
               <motion.button
