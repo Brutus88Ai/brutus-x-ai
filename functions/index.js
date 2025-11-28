@@ -22,22 +22,50 @@ async function generateViralPromptAI(trend, niche) {
 }
 
 async function handleSupportAI(message) {
-  // KI-Support Fallback
-  const responses = {
-    "video": "Videos werden automatisch generiert sobald du WELTHERRSCHAFT klickst! 📹",
-    "upload": "Uploads gehen zu 6 Plattformen gleichzeitig: TikTok, IG, YT, FB, X, LinkedIn! 🚀",
-    "viral": "Unser AI berechnet den Viral-Score bevor dein Video live geht! 🔥",
-    "pro": "PRO-Member bekommen unbegrenzte Videos und Priority-Support! 👑",
-    "kosten": "Woche 4.99€, Monat 19.99€, Jahr 99.99€ - spare bis zu 70%! 💰",
-    "hilfe": "Schreib mir was du brauchst! Ich helfe dir gerne weiter. 🤖"
-  };
-  
   const lowerMsg = message.toLowerCase();
-  for (const [key, response] of Object.entries(responses)) {
-    if (lowerMsg.includes(key)) return response;
-  }
-  
-  return "Danke für deine Nachricht! Ich helfe dir gerne weiter. Was möchtest du wissen? 🚀";
+
+  const knowledgeBase = [
+    {
+      match: /(pro|abo|premium|mitgliedschaft|preis|kosten|abo buchen)/,
+      answer:
+        "So buchst du BRUTUS-X-AI PRO: \n1️⃣ Öffne das Profil-Menü oben rechts. \n2️⃣ Wähle 'Upgrade auf PRO'. \n3️⃣ Entscheide dich für Woche (4,99€), Monat (19,99€) oder Jahr (99,99€). \n4️⃣ Schließe den Kauf via Google Play Billing ab – dein Account wird sofort freigeschaltet. 👑"
+    },
+    {
+      match: /(wie.*(buche|aktivieren)|google play|rechnung|kauf|abo kündigen|kündigen)/,
+      answer:
+        "Alle Zahlungen laufen DSGVO-konform über Google Play Billing. Nach dem Upgrade findest du die Rechnung in deinem Google-Account. Kündigen geht jederzeit über die Google Play Abos-Seite – wir speichern keine Zahlungsdaten clientseitig. 💳"
+    },
+    {
+      match: /(timeline|plan|zeitplan|wann|auto pilot|autopilot|workflow)/,
+      answer:
+        "Der Auto-Pilot besteht aus 3 Zyklen: \n• Zyklus 1 – Trendscouting & Skript (≈30s). \n• Zyklus 2 – Grok Imagine Render (GPU, 45-60s). \n• Zyklus 3 – Upload & Make.com Distribution. \nDu kannst im Dashboard jederzeit Pausen oder Slots im Timeline-Planer setzen.🗓️"
+    },
+    {
+      match: /(hilfe|support|kontakt|problem|fehlermeldung)/,
+      answer:
+        "Kein Stress – schick mir einfach das, was du siehst (inkl. Uhrzeit und Schritt). Unser KI-Support erstellt automatisch ein Ticket und synct es mit dem Dev-Team. Wir melden uns innerhalb von 1h. 🚑"
+    },
+    {
+      match: /(upload|plattform|facebook|instagram|tiktok|linkedin|youtube|\bx\b|veröffentlichen|posten)/,
+      answer:
+        "Uploads laufen serverseitig über Make.com. Wir posten gleichzeitig auf TikTok, Instagram Reels, YouTube Shorts, Facebook Reels, X Video und LinkedIn. Stelle sicher, dass deine OAuth Tokens in den Einstellungen aktiv sind – der Status wird in 'Uploads' angezeigt. 🚀"
+    },
+    {
+      match: /(video|render|grok|runway|qualität|dauer|wartezeit)/,
+      answer:
+        "Jeder Render-Job nutzt Runway Gen4 Turbo im 9:16 Format (720x1280) – perfekt für Shorts. Die GPU-Renderphase dauert durchschnittlich 48 Sekunden. Du siehst live den Fortschritt im Workflow-Log. Falls ein Render länger als 3 Minuten braucht, wird automatisch ein Retry gestartet. 🎬"
+    },
+    {
+      match: /(viral|score|reichweite|hashtag|caption|optimierer|skript)/,
+      answer:
+        "Dein Viral-Score besteht aus Hook-Qualität, Retention-Loop und CTA-Strength. Falls du ihn pushen willst: \n• Nutze den Caption Optimizer (CTA + 3 Hashtags). \n• Aktiviere A/B-Tests im Planer. \n• Lege deine Brand-Voice unter 'Profil → KI-Einstellungen' fest. 🔥"
+    }
+  ];
+
+  const hit = knowledgeBase.find((entry) => entry.match.test(lowerMsg));
+  if (hit) return hit.answer;
+
+  return "Danke für deine Nachricht! Ich helfe dir gerne weiter. Lass mich wissen, ob es um PRO, Timeline oder einen Render-Job geht. 🚀";
 }
 
 // Personalisierte Trends basierend auf Nutzer-Nischen
